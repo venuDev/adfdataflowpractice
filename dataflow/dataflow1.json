@@ -1,0 +1,45 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "inputfile",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "output",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				},
+				{
+					"dataset": {
+						"referenceName": "output",
+						"type": "DatasetReference"
+					},
+					"name": "sink2"
+				}
+			],
+			"transformations": [
+				{
+					"name": "ConditionalSplit1"
+				},
+				{
+					"name": "filename"
+				},
+				{
+					"name": "DerivedColumn1"
+				}
+			],
+			"script": "source(output(\n\t\tloan_amnt as integer,\n\t\tterm as string,\n\t\tint_rate as double,\n\t\temp_length as short,\n\t\thome_ownership as string,\n\t\tannual_inc as double,\n\t\tpurpose as string,\n\t\taddr_state as string,\n\t\tdti as double,\n\t\tdelinq_2yrs as short,\n\t\trevol_util as double,\n\t\ttotal_acc as short,\n\t\tbad_loan as boolean,\n\t\tlongest_credit_length as short,\n\t\tverification_status as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> source1\nsource1 split(equals(purpose,\"car\"),\n\tdisjoint: false) ~> ConditionalSplit1@(cars, allother)\nConditionalSplit1@cars derive(filename = concatWS(\"_\", purpose, toString(currentDate(),\"MMddyyy\"),\"csv\")) ~> filename\nConditionalSplit1@allother derive(filename = concatWS(\"_\", purpose, toString(currentDate(),\"MMddyyy\"),\"csv\")) ~> DerivedColumn1\nfilename sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\trowUrlColumn:'purpose',\n\ttruncate: true,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> sink1\nDerivedColumn1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> sink2"
+		}
+	}
+}
